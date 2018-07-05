@@ -51,10 +51,34 @@ class BlocksDataSaveATask extends AsyncTask{
 		$_DataArray = array();
 		$ChunkDatas = unserialize($this->ChunkDatas);
 		foreach($ChunkDatas as $ChunkX => $ChunkData){
-			foreach($ChunkData as $ChunkZ => $Data){
-				$_DataArray = array_merge_recursive($_DataArray,$Data);
+			foreach($ChunkData as $ChunkZ => $Data) {
+			    if(is_array($Data)){
+                    foreach($Data as $DataX => $DataYZ) {
+                        if (is_array($DataYZ)) {
+                            foreach ($DataYZ as $DataY => $_DataZ) {
+                                if (is_array($_DataZ)) {
+                                    foreach ($_DataZ as $DataZ => $BData) {
+										$_DataArray[$DataX][$DataY][$DataZ] = $BData;//TODO 待优化
+                                    }
+                                }else{
+                                    $_DataArray[$DataX][$DataY] = $Data;
+                                }
+                            }
+                        }else{
+                            $_DataArray[$DataX] = $Data;
+                        }
+                    }
+				    //$_DataArray = array_merge_recursive($_DataArray,$Data);
+                }else{
+                    $_DataArray[] = $Data;
+                }
 			}
 		}
+		/*for($_Tx = -64;$_Tx <= 64;$_Tx++){
+            for($_Tz = -64;$_Tz <= 64;$_Tz++){
+                $_DataArray[$_Tx][0][$_Tz] = chr(2).chr(0).chr(0);
+            }
+		}*/
 		if(strtolower($this->FilePath)=='mem'){
 			$this->SaveDataToMem = serialize($_DataArray);
 			$_ReturnData = strlen($this->SaveDataToMem);

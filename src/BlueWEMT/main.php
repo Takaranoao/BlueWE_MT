@@ -2,6 +2,7 @@
 namespace BlueWEMT;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 use pocketmine\item\Item;
@@ -13,7 +14,7 @@ $request=[头标识][操作类型][ARR([x][y][z][（ARR?）data])]
 */
 
 
-class Main extends \pocketmine\plugin\PluginBase
+class main extends \pocketmine\plugin\PluginBase
 {
 	/** @var Listener */
 	public $Listener;
@@ -83,90 +84,103 @@ class Main extends \pocketmine\plugin\PluginBase
 		if($cmd{0} === "/"){
 			$cmd = substr($cmd, 1);
 		}
-		if(!$this->API->IsSelectPointEffective()){
+
+		if($cmd != 'select'
+            && $cmd != 'paste'
+            && !$this->API->IsSelectPointEffective()){
 			$this->API->SendMessage($sender,'SelectPointNotEffective');
 			return true;
 		}
 		switch($cmd){
 			case 'replace':
-			if(!isset($params[0])){
-				$this->API->SendMessage($sender,'ReplaceMissingParameter2');
-				return false;
-			}
-			case 'set':
+			    if(!isset($params[1])){
+			    	$this->API->SendMessage($sender,'ReplaceMissingParameter');
+			    	return false;
+			    }
+            case 'set':
 			case 'supersede':
 			case 'fill':
-			$items = Item::fromString($params[0], true);
-			$bcount = count($items) - 1;
-			if($bcount < 0){
-				$this->API->SendMessage($sender,'Incorrectblocks');
-				return;
-			}
-			if($items){
-				foreach($items as $item){
-					if($item->getID() > 0xff or $item->getDamage() > 0x0f){
-						$this->API->SendMessage($sender,'Incorrectblock');
-						return;
-					}
-				}
-				$item = $items[mt_rand(0, $bcount)];
-				if($item->getID() != 0){
-					if($cmd == 'supersede'){
-						$this->API->WordEditorSchedulerUseSingleThreadAndRunIt("S",$item->getID(),$item->getDamage());
-					}elseif($cmd == 'fill'){
-						$this->API->WordEditorSchedulerUseSingleThreadAndRunIt("F",$item->getID(),$item->getDamage());
-					}elseif($cmd == 'set'){
-						$this->API->WordEditorSchedulerUseSingleThreadAndRunIt("P",$item->getID(),$item->getDamage());
-					}elseif($cmd == 'replace'){
-						$items2 = Item::fromString($params[1], true);
-						if($items2){
-							$bcnt = count($items2) - 1;
-							if($bcnt < 0){
-								$this->API->SendMessage($sender,'Incorrectblocks-replace');
-								return;
-							}
-							foreach($items2 as $item2){
-								if($item2->getID() > 0xff or $item2->getDamage() > 0x0f){
-									$this->API->SendMessage($sender,'Incorrectblock-replace');
-									return;
-								}
-							}
-							$item2 = $items2[mt_rand(0, $bcnt)];
-							$this->API->WordEditorSchedulerUseSingleThreadAndRunIt("R",$item2->getID(),$item2->getDamage(),$item->getID(),$item->getDamage());//倒过来更符合习惯
-						}else{
-							$this->API->SendMessage($sender,'Incorrectblock-UseID-replace');
-						}
-					}else{
-						$this->API->SendMessage($sender,'Subcommandtan90');
-					}
-				}else{
-					if($cmd == 'fill'){
+                if(!isset($params[0])){
+                    $this->API->SendMessage($sender,'MissingParameter');
+                    return false;
+                }
+			    $items = Item::fromString($params[0], true);
+			    $bcount = count($items) - 1;
+			    if($bcount < 0){
+				    $this->API->SendMessage($sender,'IncorrectblocksNumber');
+				    return;
+			    }
+			    if($items){
+				    foreach($items as $item){
+					    if($item->getID() > 0xff or $item->getDamage() > 0x0f){
+						    $this->API->SendMessage($sender,'Incorrectblock');
+						    return;
+					    }
+				    }
+				    $item = $items[mt_rand(0, $bcount)];
+				    if($item->getID() != 0){
+					    if($cmd == 'supersede'){
+						    $this->API->WordEditorSchedulerUseSingleThreadAndRunIt("S",$item->getID(),$item->getDamage());
+					    }elseif($cmd == 'fill'){
+						    $this->API->WordEditorSchedulerUseSingleThreadAndRunIt("F",$item->getID(),$item->getDamage());
+					    }elseif($cmd == 'set'){
+						    $this->API->WordEditorSchedulerUseSingleThreadAndRunIt("P",$item->getID(),$item->getDamage());
+					    }elseif($cmd == 'replace'){
+						    $items2 = Item::fromString($params[1], true);
+						    if($items2){
+							    $bcnt = count($items2) - 1;
+							    if($bcnt < 0){
+								    $this->API->SendMessage($sender,'Incorrectblocks-replace');
+								    return;
+							    }
+							    foreach($items2 as $item2){
+								    if($item2->getID() > 0xff or $item2->getDamage() > 0x0f){
+									    $this->API->SendMessage($sender,'Incorrectblock-replace');
+									    return;
+							    	}
+							    }
+							    $item2 = $items2[mt_rand(0, $bcnt)];
+							    $this->API->WordEditorSchedulerUseSingleThreadAndRunIt("R",$item2->getID(),$item2->getDamage(),$item->getID(),$item->getDamage());//倒过来更符合习惯
+						    }else{
+							    $this->API->SendMessage($sender,'Incorrectblock-UseID-replace');
+						    }
+					    }else{
+						    $this->API->SendMessage($sender,'Subcommandtan90');
+					    }
+				    }else{
+					    if($cmd == 'fill'){
 						
-					}elseif($cmd == 'replace'){
-						$this->API->SendMessage($sender,'PleaseUseFillCommand');
-					}elseif($cmd == 'supersede' or $cmd == 'set'){
-						$this->API->WordEditorSchedulerUseSingleThreadAndRunIt("C",$item->getID(),$item->getDamage());
-					}
+					    }elseif($cmd == 'replace'){
+						    $this->API->SendMessage($sender,'PleaseUseOtherCommand',array('fill'));//TODO
+					    }elseif($cmd == 'supersede' or $cmd == 'set'){
+						    $this->API->WordEditorSchedulerUseSingleThreadAndRunIt("C",$item->getID(),$item->getDamage());
+					    }
 					
-				}
+				    }
 			
-			} else {
-				$this->API->SendMessage($sender,'Incorrectblock-UseID');
-			}
-			return true;
-			break;
-			
+			    } else {
+				    $this->API->SendMessage($sender,'Incorrectblock-UseID');
+			    }
+			    return true;
+			    break;
 			case 'copy':
 			    //API::$SavedBlocksPath.'/Test.szb'
-			$this->API->CacheGenerateSchedulerUseSingleThreadAndRunIt();
-			return true;
-			break;
+                $this->API->SetDatumPoint($sender);
+			    $this->API->CacheGenerateSchedulerUseSingleThreadAndRunIt(API::$SavedBlocksPath.'/Test.szb');
+			    return true;
+			    break;
             case 'paste':
-                $this->API->PasteCacheBlockSchedulerUseSingleThreadAndRunIt($sender);
+                $this->API->PasteCacheBlockSchedulerUseSingleThreadAndRunIt($sender->getLevel(),$sender,API::$SavedBlocksPath.'/Test.szb');
                 //TODO
                 return true;
                 break;
-			
+            case 'select':
+                //TODO 判断是否在状态,还有提示
+                $this->API->SetSelectMode($sender->getName());
+                return true;
+                break;
+            case 'cleanchunk':
+                //$sender->getLevel()->getChunk(,)
 		}
 		return false;
 	}

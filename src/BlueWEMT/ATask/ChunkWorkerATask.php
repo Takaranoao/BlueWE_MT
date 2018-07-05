@@ -24,12 +24,15 @@ declare(strict_types = 1);
 */  
 namespace BlueWEMT\ATask;
 
+use BlueWEMT\API;
+use BlueWEMT\scheduler\AWordEditorScheduler;
 use pocketmine\level\format\Chunk;
 //use pocketmine\level\SimpleChunkManager;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
 //use pocketmine\utils\Utils;
 //use pocketmine\math\Vector2;
+
 use pocketmine\math\Vector3;
 use pocketmine\level\Level;
 use pocketmine\level\format\EmptySubChunk;
@@ -43,10 +46,16 @@ class chunkWorkerATask extends AsyncTask{
 	private $error;
 	/** @var int */
 	private $LevelID;
-	public function __construct(Level $level,Chunk $Chunk,array $WorkerCommand){
+    /** @var string */
+    private $TaskID;
+    /** @var string */
+    private $SubtaskID;
+	public function __construct(Level $level,Chunk $Chunk,array $WorkerCommand,string $TaskID,string $SubtaskID){
 		$this->LevelID = $level->getId();
 		$this->Chunk = $Chunk->fastSerialize();
 		$this->WorkerCommand = serialize($WorkerCommand);
+        $this->TaskID = $TaskID;
+        $this->SubtaskID = $SubtaskID;
 	}
 
 	public function onRun(){
@@ -192,10 +201,12 @@ class chunkWorkerATask extends AsyncTask{
 									}
 								}
 								if($tmpbool){
+
 									$ChangedSubChunks[$y >> 4]->setBlockId($x, $y & 0x0f, $z, $commands[3]);
 									if(isset($commands[4])){
 										$ChangedSubChunks[$y >> 4]->setBlockData($x, $y & 0x0f, $z, $commands[4]);
 									}
+                                    $Chunk->setBlockExtraData($x, $y & 0x0f, $z, 0);
 									$num++;
 								}
 							}
@@ -203,7 +214,7 @@ class chunkWorkerATask extends AsyncTask{
 					}
 				}
 			}
-			echo($num);
+			//echo($num);
 			foreach ($ChangedSubChunks as $key => $ChangedSubChunk) {
 				$Chunk->setSubChunk($key,$ChangedSubChunk);
 				//$updateblockPoss[] = new Vector3(($this->ChunkX << 4)+1,($key*0x0f)+1,($this->ChunkZ << 4)+1);
@@ -220,9 +231,8 @@ class chunkWorkerATask extends AsyncTask{
 		if($this->error !== ""){
 			$server->getLogger()->debug("[BlueWE] Async task failed due to \"$this->error\"");
 		}else{
-			$Chunk = Chunk::fastDeserialize($this->Chunk);
-			$server->getLevel($this->LevelID)->setChunk($Chunk->getX(), $Chunk->getZ(),$Chunk);
-			$server->getLevel($this->LevelID)->populateChunk($Chunk->getX(), $Chunk->getZ());
+			$Chunk = Chunk::fastDeserialize($this->Chunk);//TODO 弄个 callback 到 Scheduler
+            AWordEditorScheduler::RunTaskCallback($Chunk,$server->getLevel($this->LevelID),$this->TaskID,$this->SubtaskID);
 		}
 	}
 }

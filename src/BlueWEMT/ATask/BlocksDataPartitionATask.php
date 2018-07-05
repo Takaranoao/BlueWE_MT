@@ -56,20 +56,26 @@ class BlocksDataPartitionATask extends AsyncTask{
 		foreach($BlocksData as $x => $_dataYZ){
 			foreach($_dataYZ as $y => $_dataZ){
 				foreach($_dataZ as $z => $_data){
-					if(strlen($_data) == 3){//应该是三字节表示一个方块的，ID DATA BLOCKLIGHT
-						$_x = $x+$DatumPoint->x;
-						$_y = $y+$DatumPoint->y;
-						$_z = $z+$DatumPoint->z;
-						if(!isset($_ReturnArray['ChunkPoint'][$_x >> 4][$_z >> 4])){
-							$_ChunkPos['x'] = $_x >> 4;
-							$_ChunkPos['z'] = $_z >> 4;
-							$_ReturnArray['ChunkPos'][] = $_ChunkPos;
-						}
-						$_ReturnArray['ChunkPoint'][$_x >> 4][$_z >> 4][$_x & 0x0f][$_y & Level::Y_MASK][$_z & 0x0f] = $_data;
-						echo('喜+1');
+                    $_Tdata = array();
+					if(is_array($_data)){
+                        $_Tdata = $_data;
 					}else{
-					    echo('坑爹的数据');
-                    }
+                        $_Tdata['D'] = $_data;
+					}
+					if(isset($_Tdata) && $_Tdata !== array()){
+                        $_x = $x+$DatumPoint->x;
+                        $_y = $y+$DatumPoint->y;
+                        $_z = $z+$DatumPoint->z;
+                        $ChunkX = $_x >> 4;
+                        $ChunkZ = $_z >> 4;
+                        if(!isset($_ReturnArray['ChunkPoint'][$ChunkX][$ChunkZ])){
+                            $_ChunkPos['x'] = $ChunkX;
+                            $_ChunkPos['z'] = $ChunkZ;
+                            $_ReturnArray['ChunkPos'][] = $_ChunkPos;
+                        }
+                        $_ReturnArray['ChunkPoint'][$ChunkX][$ChunkZ][$_x & 0x0f][$_y & Level::Y_MASK][$_z & 0x0f] = $_Tdata;
+					}
+
 				}
 			}
 		}
