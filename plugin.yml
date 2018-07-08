@@ -2,8 +2,7 @@ name: BlueWorldEditor
 main: BlueWEMT\main
 version: "0.8.1"
 api: [2.0.0,3.0.0]
-author: "baolan"
-softdepend: ["ZXDAKernel"]
+author: "takaranoao"
 commands:
  /set:
   description: Set all blocks inside the selection region to a specified block(s)
