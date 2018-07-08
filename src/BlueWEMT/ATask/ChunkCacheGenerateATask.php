@@ -25,6 +25,9 @@ declare(strict_types = 1);
 namespace BlueWEMT\ATask;
 use pocketmine\entity\Human;
 use pocketmine\nbt\NBT;
+use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\tile\Tile;
+use pocketmine\nbt\NBTStream;
 use pocketmine\Server;
 use pocketmine\level\Level;
 use pocketmine\scheduler\AsyncTask;
@@ -67,13 +70,14 @@ class ChunkCacheGenerateATask extends AsyncTask{
         $EntityNBT = array();
         $TileNBT = array();
 
-        $_NBT = new NBT();
+        /*
         foreach($ChunkEntity as $_EntityIndex => $entity){
+			$_NBT = new CompoundTag();
             if(API::IsInArea(
             	new Vector3($StartPoint->x + ($Chunk->getX() << 4),$StartPoint->y,$StartPoint->z + ($Chunk->getZ() << 4)),
 				new Vector3($EndPoint->x + ($Chunk->getX() << 4),$EndPoint->y,$EndPoint->z + ($Chunk->getZ() << 4)),
 				$entity,true) and !($entity instanceof Human) and !$entity->closed){
-                $entity->saveNBT();
+                $entity->saveNBT($_NBT);
                 $_EntityX = (int)($entity->getX());
                 $_EntityY = (int)($entity->getY());
                 $_EntityZ = (int)($entity->getZ());
@@ -85,27 +89,29 @@ class ChunkCacheGenerateATask extends AsyncTask{
                 $EntityNBT [$_EntityX][$_EntityY][$_EntityZ] = $_NBT->write();
             }
         }
+        */
         foreach($ChunkTile as $_TileIndex => $tile){
+			
             if(API::IsInArea(new Vector3($StartPoint->x + ($Chunk->getX() << 4),$StartPoint->y,$StartPoint->z + ($Chunk->getZ() << 4)),
 				new Vector3($EndPoint->x + ($Chunk->getX() << 4),$EndPoint->y,$EndPoint->z + ($Chunk->getZ() << 4))
 				,$tile,true)){
-                $tile->saveNBT();
+				
+				$NBTtag = new CompoundTag();
+                $tile->saveNBT($NBTtag);//保存到CompoundTag
+
                 $_TileX = (int)($tile->getX());
                 $_TileY = (int)($tile->getY());
                 $_TileZ = (int)($tile->getZ());
                 echo('T:('.$_TileX .','.$_TileY.','.$_TileZ.')'."\n");
-                $nbt = $tile->namedtag;
-                $nbt["x"] = (int)($nbt["x"] - $DatumPoint->x);
-				$nbt["y"] = (int)($nbt["y"] - $DatumPoint->y);
-				$nbt["z"] = (int)($nbt["z"] - $DatumPoint->z);
-                $_NBT->setData($nbt);//TODO 坐标减基准点
-
-
-                $TileNBT [$_TileX][$_TileY][$_TileZ] = $_NBT->write();
+                //$nbt = $tile->namedtag;
+                $NBTtag[Tile::TAG_X] = (int)($NBTtag[Tile::TAG_X] - $DatumPoint->x);
+				$NBTtag[Tile::TAG_Y] = (int)($NBTtag[Tile::TAG_Y] - $DatumPoint->y);
+				$NBTtag[Tile::TAG_Z] = (int)($NBTtag[Tile::TAG_Z] - $DatumPoint->z);
+				//坐标减基准点
+                $TileNBT [$_TileX][$_TileY][$_TileZ] = NBTStream::toArray($NBTtag);;
 			}
 
         }
-        unset($_NBT);
 		//TODO
         $this->EntityNBT = serialize($EntityNBT);
         $this->TileNBT = serialize($TileNBT);
@@ -149,7 +155,8 @@ class ChunkCacheGenerateATask extends AsyncTask{
 						$_BlockID = $_SubChunk->getBlockId($x, $y & 0x0f, $z);
                         $_BlockData = $_SubChunk->getBlockData($x, $y & 0x0f, $z);
 						$_BlockLight = $_SubChunk->getBlockLight($x, $y & 0x0f, $z);
-                        $_ExtraData = $Chunk->getBlockExtraData($x, $y, $z);
+                        $_ExtraData = 0;
+                        //$_ExtraData = $Chunk->getBlockExtraData($x, $y, $z);
 					}else {
                         $_BlockID = 0;
                         $_BlockData = 0;

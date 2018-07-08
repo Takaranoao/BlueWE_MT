@@ -4,7 +4,7 @@ namespace BlueWEMT\scheduler;
 use pocketmine\entity\Entity;
 use pocketmine\tile\Tile;
 use pocketmine\math\Vector3;
-use pocketmine\nbt\NBT;
+use pocketmine\nbt\NBTStream;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\Server;
 use BlueWEMT\ATask\LoadCacheBlockFileATask;
@@ -39,8 +39,8 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
         if(!isset(self::$TaskDataList[$TaskID]['LevelID'])) return false;
         if(!isset(self::$TaskDataList[$TaskID]['DatumPoint'])) return false;
 	    $level = Server::getInstance()->getLevel(self::$TaskDataList[$TaskID]['LevelID']);
-		$_NBT = new NBT();
         $DatumPoint = API::GetIntPoint(self::$TaskDataList[$TaskID]['DatumPoint']);
+        /*
 		foreach($EntityList as $_EntityNBTData){
 		    echo('实体读入');
             $_NBT->read($_EntityNBTData);
@@ -63,11 +63,9 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
                     //$Chunk->addEntity($entity);
                 }
             }
-        }
-        foreach($TileList as $_TileNBTData){
-            $_NBT->read($_TileNBTData);
-            $nbt = $_NBT->getData();
-
+        }*/
+        foreach($TileList as $_TileArrData){
+            $nbt = NBTStream::fromArray($_TileArrData);
             if($nbt instanceof CompoundTag){
                 if(!isset($nbt->id)){
                     continue;
@@ -121,13 +119,13 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
             $_BlocksData = $PartitionData['ChunkPoint'][$_ChunkX][$_ChunkZ];
 
             self::$TaskDataList[$TaskID]['ChunkLeft']++;
-            Server::getInstance()->getScheduler()->scheduleAsyncTask(new ChunkApplyBlocksDataATask($TaskID,$_Chunk,$_BlocksData,$SubTaskID));
+            Server::getInstance()->getAsyncPool()->submitTask(new ChunkApplyBlocksDataATask($TaskID,$_Chunk,$_BlocksData,$SubTaskID));
         }
         return true;
     }
 	public static function LoadCacheBlockFileCallBack (string $TaskID,array $BlocksData){
         if(!isset(self::$TaskDataList[$TaskID])) return false;
-        Server::getInstance()->getScheduler()->scheduleAsyncTask(new BlocksDataPartitionATask($TaskID,$BlocksData,self::$TaskDataList[$TaskID]['DatumPoint']));
+        Server::getInstance()->getAsyncPool()->submitTask(new BlocksDataPartitionATask($TaskID,$BlocksData,self::$TaskDataList[$TaskID]['DatumPoint']));
 	    return true;
 	}
 	public function RunTask($Async = false){
@@ -135,6 +133,6 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
         self::$TaskDataList[$this->TaskID]['DatumPoint'] = API::GetIntPoint($this->DatumPoint);
         self::$TaskDataList[$this->TaskID]['ChunkLeft'] = 0;
 
-        Server::getInstance()->getScheduler()->scheduleAsyncTask(new LoadCacheBlockFileATask($this->TaskID,$this->FilePath));
+        Server::getInstance()->getAsyncPool()->submitTask(new LoadCacheBlockFileATask($this->TaskID,$this->FilePath));
     }
 }

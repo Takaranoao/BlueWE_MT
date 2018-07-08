@@ -31,7 +31,7 @@ class CacheGenerateScheduler extends WordEditorScheduler{
 			self::$ChunkDataList[$TaskID]['ChunkData'][$ChunkX][$ChunkZ] = $data;
 			self::$ChunkDataList[$TaskID]['ChunkLeft']--;
 			if(self::$ChunkDataList[$TaskID]['ChunkLeft'] == 0){
-				Server::getInstance()->getScheduler()->scheduleAsyncTask(new \BlueWEMT\ATask\BlocksDataSaveATask($TaskID,self::$ChunkDataList[$TaskID]['ChunkData'],self::$ChunkDataList[$TaskID]['FilePath']));
+				Server::getInstance()->getAsyncPool()->submitTask(new \BlueWEMT\ATask\BlocksDataSaveATask($TaskID,self::$ChunkDataList[$TaskID]['ChunkData'],self::$ChunkDataList[$TaskID]['FilePath']));
 				unset(self::$ChunkDataList[$TaskID]);
 			}
 			return true;
@@ -56,7 +56,7 @@ class CacheGenerateScheduler extends WordEditorScheduler{
 			self::$ChunkDataList[$this->TaskID]['ChunkData'][$ChunkPos[0]][$ChunkPos[1]] = array();
 			self::$ChunkDataList[$this->TaskID]['ChunkLeft']++;
 
-			Server::getInstance()->getScheduler()->scheduleAsyncTask(new \BlueWEMT\ATask\ChunkCacheGenerateATask($this->TaskID,$Chunk,$ChunkPos[2],$ChunkPos[3],$this->DatumPoint,$Chunk->getEntities(),$Chunk->getTiles()));
+			Server::getInstance()->getAsyncPool()->submitTask(new \BlueWEMT\ATask\ChunkCacheGenerateATask($this->TaskID,$Chunk,$ChunkPos[2],$ChunkPos[3],$this->DatumPoint,$Chunk->getEntities(),$Chunk->getTiles()));
 		}
 	}
 }

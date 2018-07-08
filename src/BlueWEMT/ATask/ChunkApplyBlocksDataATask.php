@@ -64,11 +64,12 @@ class ChunkApplyBlocksDataATask extends AsyncTask{
                 if(!is_array($_dataZ))continue;
 				foreach($_dataZ as $z => $_data){
                     if(is_array($_data)){
+						/*
                         if(isset($_data['EXD'])){
                             $Chunk->setBlockExtraData($x,$y,$z,ord($_data['EXD']));
                         }else{
                             $Chunk->setBlockExtraData($x,$y,$z,0);
-                        }
+                        }*/
                         if(isset($_data['D'])){
                             $Chunk->setBlock($x, $y, $z, ord($_data['D']{0}), ord($_data['D']{1}));
                             $Chunk->setBlockLight($x, $y, $z, ord($_data['D']{2}));

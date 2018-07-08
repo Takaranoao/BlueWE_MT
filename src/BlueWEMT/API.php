@@ -207,11 +207,11 @@ class API{
             $this->RerenderChunkList[strtolower($_player->getName())][Level::chunkHash($ChunkX,$ChunkZ)] = time();
         }
         if(!$this->RerenderChunkTaskRunning)
-            $this->plugin->getServer()->getScheduler()->scheduleDelayedTask(new \BlueWEMT\Task\CheckRanderChunkCallBack($this->plugin),40);
+            $this->plugin->getScheduler()->scheduleDelayedTask(new \BlueWEMT\Task\CheckRanderChunkCallBack($this->plugin),40);
 
     }
     public function DoRerenderChunk(Level $level,Chunk $Chunk,Player $player){
-	    return $this->plugin->getServer()->getScheduler()->scheduleDelayedTask(new \BlueWEMT\Task\RanderChunkCallBack($this->plugin,$level,$Chunk,$player),20);
+	    return $this->plugin->getScheduler()->scheduleDelayedTask(new \BlueWEMT\Task\RanderChunkCallBack($this->plugin,$level,$Chunk,$player),20);
 
     }
     public function ChunkAndRerenderChunkCallBack(){
@@ -497,7 +497,6 @@ class API{
             //var_dump(file_get_contents($_PathName));
             $_lang=json_decode(file_get_contents($_PathName),true);
             if($_lang === false or !isset($_lang)){
-
                 $this->plugin->getLogger()->warning($this->getMessage('language_FileDestroyed',array($_PathName,json_last_error_msg())));
                 return false;
             }else{
@@ -509,7 +508,7 @@ class API{
         if(!isset($this->Lang[$name])){
             $this->plugin->getLogger()->warning($this->getMessage('language_GivenFiletan90',array($name)));
             if(isset($this->Lang['ch'])){
-                $this->Lang['Loaded'] = $this->Lang['ch'];
+				$this->Lang['Loaded'] = 'ch';
                 return false;
             }else{
                 //var_dump($this->Lang);

@@ -37,7 +37,9 @@ class main extends \pocketmine\plugin\PluginBase
 	public function onEnable()
 	{
         self::$instance = $this;
-		$this->getLogger()->info( '[BlueWEMT]'.TextFormat::GREEN .'いらっしゃいませ'.TextFormat::RED.' ^o^ '.TextFormat::GOLD.'来了您嘞(是测试版');
+		$this->getLogger()->info(TextFormat::GREEN.'github:'. TextFormat::GOLD .'https://github.com/baolan-zifu/BlueWE_MT');
+		$this->getLogger()->info(TextFormat::AQUA.'觉得好用上去点个星星呗～遵循 LGPLV3 协议开源');
+		$this->getLogger()->info(TextFormat::GOLD.'目前版本还不稳定，请多包涵～');
 		$this->API = new API($this);
 		$this->Listener = new Listener($this);
 	}
@@ -156,8 +158,11 @@ class main extends \pocketmine\plugin\PluginBase
                 }else{
                     $_FileName = 'mem';
                 }
-
-                if(!preg_match("^[a-zA-Z0-9]{1,32}$", $_FileName)){
+				if(strlen($_FileName) > 32 || strlen($_FileName) < 1){
+					$this->API->SendMessage($sender,'FileName_not_match');
+					return false;
+				}
+                if(!ctype_alnum($_FileName)){
                     $this->API->SendMessage($sender,'FileName_not_match');
                     return false;
                 }

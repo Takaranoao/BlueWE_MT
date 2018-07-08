@@ -206,7 +206,7 @@ class chunkWorkerATask extends AsyncTask{
 									if(isset($commands[4])){
 										$ChangedSubChunks[$y >> 4]->setBlockData($x, $y & 0x0f, $z, $commands[4]);
 									}
-                                    $Chunk->setBlockExtraData($x, $y & 0x0f, $z, 0);
+                                    //$Chunk->setBlockExtraData($x, $y & 0x0f, $z, 0);
 									$num++;
 								}
 							}

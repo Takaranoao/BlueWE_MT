@@ -72,7 +72,7 @@ class AWordEditorScheduler extends WordEditorScheduler{
                 self::$ChunkDataList[$this->TaskID]['ChunkLeft'] = 0;
             }
             self::$ChunkDataList[$this->TaskID]['ChunkLeft']++;
-			Server::getInstance()->getScheduler()->scheduleAsyncTask(new \BlueWEMT\ATask\ChunkWorkerATask($level,$Chunk,array($ChunkPos[2],$ChunkPos[3],$this->WorkMode,$this->WorkID,$this->WorkData,$this->WorkID2,$this->WorkData2),$this->TaskID,$_SubTaskID));
+            Server::getInstance()->getAsyncPool()->submitTask(new \BlueWEMT\ATask\ChunkWorkerATask($level,$Chunk,array($ChunkPos[2],$ChunkPos[3],$this->WorkMode,$this->WorkID,$this->WorkData,$this->WorkID2,$this->WorkData2),$this->TaskID,$_SubTaskID));
 		}
 		return true;
 	}
