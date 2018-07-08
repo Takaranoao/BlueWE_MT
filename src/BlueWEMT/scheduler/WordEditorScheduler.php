@@ -26,6 +26,9 @@ abstract class WordEditorScheduler{
         self::$SubTaskNumber++;
         return $TaskID.self::$SubTaskNumber;
     }
+    protected static function CallBack(string $TaskID,string $TaskName,array $args){
+        API::WorldEditorSchedulerCallBack($TaskID,$TaskName,$args);
+    }
     protected function EmptyRangeTileInChunk(array $tiles,Vector3 $StartPoint,Vector3 $EndPoint){
         $StartPoint->x = $StartPoint->x & 0x0f;
         $StartPoint->y = $StartPoint->y & Level::Y_MASK;

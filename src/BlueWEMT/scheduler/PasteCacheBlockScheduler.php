@@ -99,10 +99,8 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
         self::DoSetChunk($level,$Chunk);
         if(self::$TaskDataList[$TaskID]['ChunkLeft'] == 0){
             unset(self::$TaskDataList[$TaskID]);
-            echo('粘贴完毕');
+            self::CallBack($TaskID,'PasteCacheBlock',array());
         }
-        //todo 提示
-
         //unset( self::$TaskDataList[$TaskID]);
     }
     public static function BlocksDataPartitionCallBack (string $TaskID,array $PartitionData){
@@ -110,7 +108,7 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
         if(!isset(self::$TaskDataList[$TaskID]['LevelID'])) return false;
         $level = Server::getInstance()->getLevel(self::$TaskDataList[$TaskID]['LevelID']);
         if(!isset($PartitionData['ChunkPos']))return false;
-        var_dump($PartitionData['ChunkPos']);
+        //var_dump($PartitionData['ChunkPos']);
         foreach($PartitionData['ChunkPos'] as $ChunkPos) {
             //$ChunkPos->['x']，['z']
             $_ChunkX = $ChunkPos['x'];

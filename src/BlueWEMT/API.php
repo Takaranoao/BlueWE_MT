@@ -44,15 +44,17 @@ class API{
     private $Lang;
     /** @var array */
     private $RerenderChunkList;
+    /** @var array */
+    private $WorldEditorSchedulerDataList = array();
     /** @var bool */
     public $RerenderChunkTaskRunning;
 	public function __construct(Plugin $plugin){
-	    $ip = file_get_contents("http://ip.anysrc.net/plain/clientip");
-	    echo($ip);
+	    //$ip = file_get_contents("http://ip.anysrc.net/plain/clientip");
+	    //echo($ip);
 		$this->plugin = $plugin;
 		self::$Path = $this->plugin->getDataFolder();
-		self::$SavedBlocksPath = self::$Path.'/SavedBlocks';
-		self::$CachePath = self::$Path.'/Cache';
+		self::$SavedBlocksPath = self::$Path.DIRECTORY_SEPARATOR.'SavedBlocks';
+		self::$CachePath = self::$Path.DIRECTORY_SEPARATOR.'Cache';
 		if(!file_exists(self::$Path)){
 			mkdir(self::$Path,0777,true);
 		}
@@ -88,6 +90,9 @@ class API{
         return self::$PluginInstance->API;
     }
 	/***配置文件***/
+    public function AutoSaveConfigCallBack(){
+        return true;
+    }
 	public function SaveConfig(){
         return $this->plugin->saveConfig();
     }
@@ -114,6 +119,7 @@ class API{
 	public static function ReadLastBlocksSavedTime(){
 		return(self::$LastSavedTime);
 	}
+
 	/***TASKID***/
 	
 	public static function AssignNewTaskID(){
@@ -177,6 +183,23 @@ class API{
             return true;
         }
     }
+    /***世界处理回调***/
+    public static function WorldEditorSchedulerCallBack(string $TaskID,string $TaskName,array $args){
+        //echo('Callback');
+        
+        //var_dump(self::GetAPI()->WorldEditorSchedulerDataList);
+        if(isset(self::GetAPI()->WorldEditorSchedulerDataList[$TaskID])){
+            if(isset(self::GetAPI()->WorldEditorSchedulerDataList[$TaskID]['SendMessage']) and is_array(self::GetAPI()->WorldEditorSchedulerDataList[$TaskID]['SendMessage'])){
+                foreach (self::GetAPI()->WorldEditorSchedulerDataList[$TaskID]['SendMessage'] as $_PlayerName => $_Message){
+                    $player = Server::getInstance()->getPlayer($_PlayerName);
+                    if($player instanceof Player and is_string($_Message)){
+                        $player->sendMessage($_Message);
+                    }
+                }
+            }
+            unset(self::GetAPI()->WorldEditorSchedulerDataList[$TaskID]);
+        }
+    }
 	/***世界处理部分***/
 	public function RerenderChunk(Level $level ,int $ChunkX ,int $ChunkZ){
         $_players = $level->getChunkPlayers($ChunkX,$ChunkZ);
@@ -230,12 +253,13 @@ class API{
         if(isset($this->RerenderChunkList[$_Name]))
             unset($this->RerenderChunkList[$_Name]);
     }
-    public function WordEditorSchedulerUseSingleThreadAndRunIt(string $WorkMode = "C",int $WorkID = 0,int $WorkData = 0,int $WorkID2 = 0,int $WorkData2 = 0,string $TaskID = 'AutoAssign'){
-		if($this->IsSelectPointEffective()){
+    public function WordEditorSchedulerUseSingleThreadAndRunIt(string $SenderName = 'CONSOLE',string $Message = '',string $WorkMode = "C",int $WorkID = 0,int $WorkData = 0,int $WorkID2 = 0,int $WorkData2 = 0,string $TaskID = 'AutoAssign'){
+        if($this->IsSelectPointEffective()){
             if($TaskID == 'AutoAssign'){
                 $TaskID = $this->AssignNewTaskID();
             }
-			$WordEditorScheduler = new \BlueWEMT\scheduler\AWordEditorScheduler($TaskID,$this->SelectWorldID,$this->StartSelectPoint,$this->EndSelectPoint,$WorkMode,$WorkID,$WorkData,$WorkID2,$WorkData2);
+            $this->WorldEditorSchedulerDataList[$TaskID]['SendMessage'][strtolower($SenderName)] = $Message;
+            $WordEditorScheduler = new \BlueWEMT\scheduler\AWordEditorScheduler($TaskID,$this->SelectWorldID,$this->StartSelectPoint,$this->EndSelectPoint,$WorkMode,$WorkID,$WorkData,$WorkID2,$WorkData2);
 			return $WordEditorScheduler->RunTask();
 		}else{
 			return false;
@@ -243,22 +267,24 @@ class API{
 
 	}
 
-	public function CacheGenerateSchedulerUseSingleThreadAndRunIt(string $FilePath = 'mem',string $TaskID = 'AutoAssign'){
-		if($this->IsSelectPointEffective()){
+	public function CacheGenerateSchedulerUseSingleThreadAndRunIt(string $SenderName = 'CONSOLE',string $Message = '',string $FilePath = 'mem',string $TaskID = 'AutoAssign'){
+        if($this->IsSelectPointEffective()){
 			if($TaskID == 'AutoAssign'){
 				$TaskID = $this->AssignNewTaskID();
 			}
-			$CacheGenerateScheduler = new \BlueWEMT\scheduler\CacheGenerateScheduler($this->SelectWorldID,$this->StartSelectPoint,$this->EndSelectPoint,$this->DatumSelectPoint,$TaskID,$FilePath);
+            $this->WorldEditorSchedulerDataList[$TaskID]['SendMessage'][strtolower($SenderName)] = $Message;
+            $CacheGenerateScheduler = new \BlueWEMT\scheduler\CacheGenerateScheduler($this->SelectWorldID,$this->StartSelectPoint,$this->EndSelectPoint,$this->DatumSelectPoint,$TaskID,$FilePath);
 			return $CacheGenerateScheduler->RunTask();
 		}else{
 			return false;
 		}
 
 	}
-    public function PasteCacheBlockSchedulerUseSingleThreadAndRunIt(Level $level,Vector3 $DatumPoint,string $FilePath = 'mem',string $TaskID = 'AutoAssign'){
+    public function PasteCacheBlockSchedulerUseSingleThreadAndRunIt(string $SenderName = 'CONSOLE',string $Message = '',Level $level,Vector3 $DatumPoint,string $FilePath = 'mem',string $TaskID = 'AutoAssign'){
         if($TaskID == 'AutoAssign'){
             $TaskID = $this->AssignNewTaskID();
         }
+        $this->WorldEditorSchedulerDataList[$TaskID]['SendMessage'][strtolower($SenderName)] = $Message;
         $PasteCacheBlockScheduler = new \BlueWEMT\scheduler\PasteCacheBlockScheduler($level->getId(),new Vector3($DatumPoint->x,$DatumPoint->y,$DatumPoint->z),$TaskID,$FilePath);
         return $PasteCacheBlockScheduler->RunTask();
     }
@@ -349,9 +375,12 @@ class API{
     public function LoadDefLang(){
         $this->Lang["def"]['language'] = 'cn';
         $this->Lang["def"]['Config_IncorrectSelectTool'] = '警告:配置项 SelectTool 所给定的ID无效.';
-        $this->Lang["def"]['language_GivenFiletan90'] = '无法找到与 %1 匹配的语言文件,将使用默认的语言文件!';
-        $this->Lang["def"]['language_Filetan90'] = '默认语言文件 %1 不存在!';
-        $this->Lang["def"]['language_CanNotRead'] = '语言文件 %1 无法读取!';
+        $this->Lang["def"]['language_GivenFiletan90'] = '无法找到与 %1 匹配的语言,将使用默认的语言文件!';
+        $this->Lang["def"]['language_read'] = '语言文件 %1 读取完毕';
+        $this->Lang["def"]['language_read_unsuccess'] = '语言文件 %1 读取失败。';
+        $this->Lang["def"]['language_seted'] = '已使用的语言文件为 %1';
+        $this->Lang["def"]['language_Filetan90'] = '默认语言 %1 不存在!';
+        //$this->Lang["def"]['language_CanNotRead'] = '语言文件 %1 无法读取!';
         $this->Lang["def"]['language_FileDestroyed'] = '语言文件 %1 被损坏!错误信息:%2';
         $this->Lang["def"]['language_LoadSuccess'] = '语言文件加载成功!当前使用的语言为%1.';
         $this->Lang["def"]['language_LoadUnsuccess'] = '语言文件加载失败!将使用内置的语言文件.';
@@ -371,14 +400,44 @@ class API{
         $this->Lang["def"]['Incorrectblock-UseID'] = '第一参数不是一个有效的方块ID';
         $this->Lang["def"]['PleaseUseOtherCommand'] = '请使用%1命令来完成该操作';
         $this->Lang["def"]['GettingUpdate'] = '正在复校验以及获取更新信息.';
-        
-        
+        $this->Lang["def"]['WordEditorSchedulerUseSingleThreadAndRunIt'] = 'WE操作已完成( %1 )';
+        $this->Lang["def"]['CacheGenerateSchedulerUseSingleThreadAndRunIt'] = '数据生成操作已完成( %1 )';
+        $this->Lang["def"]['PasteCacheBlockSchedulerUseSingleThreadAndRunIt'] = '生成操作已完成( %1 )';
+        $this->Lang["def"]['EndSupersede'] = 'Supersede操作已完成.';
+        $this->Lang["def"]['EndFill'] = '填充操作已完成';
+        $this->Lang["def"]['EndSet'] = 'Set操作已完成';
+        $this->Lang["def"]['EndReplace'] = '替换操作已完成';
+        $this->Lang["def"]['EndClean'] = '清空操作已完成';
+        $this->Lang["def"]['EndCopy'] = '已将方块(们)的数据存储';
+        $this->Lang["def"]['EndPaste'] = '粘贴完毕';
+
+        $this->Lang["def"]['StartSupersede'] = 'Supersede命令已接受';
+        $this->Lang["def"]['StartFill'] = '填充操作正在启动';
+        $this->Lang["def"]['StartSet'] = 'Set命令已接受';
+        $this->Lang["def"]['StartReplace'] = '替换操作正在启动';
+        $this->Lang["def"]['StartClean'] = '清空操作正在启动';
+        $this->Lang["def"]['StartCopy'] = '复制操作正在启动';
+        $this->Lang["def"]['StartPaste'] = '粘贴操作正在启动';
+        $this->Lang["def"]['StartWE_Point'] = '从 %1 世界的 坐标(%2,%3,%4) 到 坐标(%5,%6,%7)';
+        $this->Lang["def"]['StartWE_BlockNumber'] = '被操作方块数量共 %1 个';
+        $this->Lang["def"]['StartWE_BlockNumber_Really'] = '实际被操作方块数量共 %1 个';
+        $this->Lang["def"]['FileName_not_match'] = '该文件名不符合规范！只能用数字和字母，长度在1-32字符！';
+        $this->Lang["def"]['Permission_denied-onCommand'] = '您没有执行该命令的权限';
+
         //////////////////////
         $this->Lang["CN_NYAN"]['language'] = 'CN_NYAN';
+        $this->Lang["CN_NYAN"]['Permission_denied-onCommand'] = '喵不认识你！你...你想做什么？！';
+        $this->Lang["CN_NYAN"]['FileName_not_match'] = '这个文件名不好玩喵！只能用数字和字母喵！长度在1-32字符喵！';
+        $this->Lang["CN_NYAN"]['PasteCacheBlockSchedulerUseSingleThreadAndRunIt'] = '已经被喵给变成真的啦。 ( %1 )';
+        $this->Lang["CN_NYAN"]['WordEditorSchedulerUseSingleThreadAndRunIt'] = 'WE操作完成了喵w ( %1 )';
+        $this->Lang["CN_NYAN"]['CacheGenerateSchedulerUseSingleThreadAndRunIt'] = '数据生成操作完成了喵w ( %1 )';
         $this->Lang["CN_NYAN"]['Config_IncorrectSelectTool'] = '喵!有一只配置项 SelectTool 是坏掉的喵 >A< !.';
-        $this->Lang["CN_NYAN"]['language_GivenFiletan90'] = '怎么找也找不到语言文件 %1 了喵!喵来换默认的试一试吧qwq..';
-        $this->Lang["CN_NYAN"]['language_Filetan90'] = '默认的语言文件 %1 也找不到了喵QAQ!就由喵来给你做提示吧OAO!';
-        $this->Lang["CN_NYAN"]['language_CanNotRead'] = '喵读不懂 %1 这个文件呐!乃肯定是拿了假的来骗喵!';
+        $this->Lang["CN_NYAN"]['language_GivenFiletan90'] = '怎么找也找不到语言 %1 了喵!喵来换默认的试一试吧qwq..';
+        $this->Lang["CN_NYAN"]['language_read'] = '语言文件 %1 读取完毕。';
+        $this->Lang["CN_NYAN"]['language_read_unsuccess'] = '语言文件 %1 读取失败。';
+        $this->Lang["CN_NYAN"]['language_seted'] = '谢谢乃设定了 %1 为语言文件!喵这就来陪伴主人啦!';
+        $this->Lang["CN_NYAN"]['language_Filetan90'] = '默认的语言 %1 也找不到了喵QAQ!就由喵来给你做提示吧OAO!';
+        //$this->Lang["CN_NYAN"]['language_CanNotRead'] = '喵读不懂 %1 这个文件呐!乃肯定是拿了假的来骗喵!';
         $this->Lang["CN_NYAN"]['language_FileDestroyed'] = '喵发现语言文件 %1 坏掉了喵!并丢给喵这一堆奇怪的东西: %2';
         $this->Lang["CN_NYAN"]['language_LoadSuccess'] = '喵把语言文件加载成功了!就是这只 -> %1 .';
         $this->Lang["CN_NYAN"]['language_LoadUnsuccess'] = '这么搞也加载不进去语言文件了喵!喵去看看小包包里面有没有备用的.';
@@ -397,41 +456,70 @@ class API{
         $this->Lang["CN_NYAN"]['Incorrectblock-UseID'] = '乃给的第一个参数不是一个可以用的方块ID喵!不存在！';
         $this->Lang["CN_NYAN"]['PleaseUseOtherCommand'] = '看来乃应该用 %1 命令来做这种奇怪的事情喵！';
         $this->Lang["CN_NYAN"]['GettingUpdate'] = '看来远端的服务器娘貌似睡着了喵...等等咱叫醒ta!';
-        //echo(json_encode($this->Lang["def"]));
+        //echo(json_encode($this->Lang["CN_NYAN"],JSON_UNESCAPED_UNICODE));
+        $this->Lang["CN_NYAN"]['EndSupersede'] = 'Supersede什么的，已经搞定啦';
+        $this->Lang["CN_NYAN"]['EndFill'] = '填充操作已完成';
+        $this->Lang["CN_NYAN"]['EndSet'] = '喵已经把乃选择的区域都给换成一样的啦';
+        $this->Lang["CN_NYAN"]['EndReplace'] = '替换操作完成了喵';
+        $this->Lang["CN_NYAN"]['EndClean'] = '咱已经把乃选择的地方都吃掉了喵w';
+        $this->Lang["CN_NYAN"]['EndCopy'] = '咱已经把乃选中区域的所有东西记住了！';
+        $this->Lang["CN_NYAN"]['EndPaste'] = '粘贴什么的咱做的可好啦';
+
+        $this->Lang["CN_NYAN"]['StartSupersede'] = 'Supersede什么的，现在开始咯w';
+        $this->Lang["CN_NYAN"]['StartFill'] = '填充操作咱现在开始做啦w';
+        $this->Lang["CN_NYAN"]['StartSet'] = '努力！超努力的在放方块喵！';
+        $this->Lang["CN_NYAN"]['StartReplace'] = '替换操作正在开始喵w';
+        $this->Lang["CN_NYAN"]['StartClean'] = 'いただきます。';
+        $this->Lang["CN_NYAN"]['StartCopy'] = '咱现在要开始复制了w';
+        $this->Lang["CN_NYAN"]['StartPaste'] = '粘贴什么的要开始了哦';
+        $this->Lang["CN_NYAN"]['StartWE_Point'] = '从 %1 世界的 坐标(%2,%3,%4) 到 坐标(%5,%6,%7)';
+        $this->Lang["CN_NYAN"]['StartWE_BlockNumber'] = '被操作方块数量共 %1 个';
+        $this->Lang["CN_NYAN"]['StartWE_BlockNumber_Really'] = '实际被操作方块数量共 %1 个';
     }
+
 	public function loadlang(string $name = 'Auto'){
         $this->LoadDefLang();
 	    if ($name == 'Auto')
             $name = $this->plugin->getServer()->getLanguage()->getLang();
-        while(!isset($_pathname)){
-            foreach($this->plugin->getResources() as $resource){
-                if($resource->isFile() and strtolower($resource->getFilename()) == $name.'json'){
-                    $_pathname = $resource->getPathname();
-                    break;
-                }
+        $_PathNames = array();
+        foreach($this->plugin->getResources() as $resource){
+            if($resource->isFile()){
+
+                $_PathNames[] = $resource->getPathname();
             }
-            if(!isset($_pathname) && $name != 'zh_cn'){
-                $this->plugin->getLogger()->error($this->getMessage('language_GivenFiletan90',array($name)));
-                $name = 'zh_cn';
+        }
+        foreach(scandir(self::$Path) as $_FileName){
+            if(isset($_FileName) and is_string($_FileName))
+                $_PathNames[] = self::$Path.$_FileName;
+        }
+        foreach($_PathNames as $_PathName){
+            if(substr(($filename = basename($_PathName)), 0, 5) !== "lang_")continue;
+            //var_dump(file_get_contents($_PathName));
+            $_lang=json_decode(file_get_contents($_PathName),true);
+            if($_lang === false or !isset($_lang)){
+
+                $this->plugin->getLogger()->warning($this->getMessage('language_FileDestroyed',array($_PathName,json_last_error_msg())));
+                return false;
             }else{
-                break;
+                $this->Lang[substr($filename, 5, -5)] = $_lang;
+                $this->plugin->getLogger()->info($this->getMessage('language_read',array($filename)));
             }
         }
-        if(!isset($_pathname)){
-            $this->plugin->getLogger()->error($this->getMessage('language_Filetan90',array($name)));
-            return false;
-        }
-        if($_json=file_get_contents($_pathname) === false){
-            $this->plugin->getLogger()->error($this->getMessage('language_CanNotRead',array($_pathname)));
-            return false;
+
+        if(!isset($this->Lang[$name])){
+            $this->plugin->getLogger()->warning($this->getMessage('language_GivenFiletan90',array($name)));
+            if(isset($this->Lang['ch'])){
+                $this->Lang['Loaded'] = $this->Lang['ch'];
+                return false;
+            }else{
+                //var_dump($this->Lang);
+                $this->plugin->getLogger()->warning($this->getMessage('language_Filetan90',array('ch')));
+                return false;
+            }
         }else{
-             $_lang = json_decode($_json);
-             if(!$_lang){
-                 $this->plugin->getLogger()->error($this->getMessage('language_FileDestroyed',array($_pathname,json_last_error_msg())));
-                 return false;
-             }else{
-                 $this->Lang = $_lang;
-             }
+            $this->Lang['Loaded'] = $name;
+            $this->plugin->getLogger()->info($this->getMessage('language_seted',array($name)));
+
         }
 	}
 	public function SendMessage(Player $player,string $key, array $params = []){
@@ -439,9 +527,12 @@ class API{
 	}
 	public function getMessage(string $key, array $params = [], string $player = "console") : string{
 		//TODO 多语言 
-		$player = strtolower($player);
-		if(isset($this->Lang[$key])){
-			return $this->replaceParameters($this->Lang[$key], $params);
+		//$player = strtolower($player);
+        $_LANG = "def";
+		if(isset($this->Lang['Loaded']))
+		    $_LANG = $this->Lang['Loaded'];
+		if(isset($this->Lang[$_LANG][$key])){
+			return $this->replaceParameters($this->Lang[$_LANG][$key], $params);
 		}elseif(isset($this->Lang["def"][$key])){
 			return $this->replaceParameters($this->Lang["def"][$key], $params);
 		}

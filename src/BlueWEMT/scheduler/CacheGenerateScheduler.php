@@ -42,6 +42,7 @@ class CacheGenerateScheduler extends WordEditorScheduler{
 	}
 	public static function BlocksDataSaveCallback(string $TaskID,int $Status){
 		//TODO 什么鬼的处理
+        self::CallBack($TaskID,'CacheGenerate',array());
 		echo('完事');
 	}
 	//@override

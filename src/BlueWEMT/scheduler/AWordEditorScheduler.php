@@ -23,6 +23,8 @@ class AWordEditorScheduler extends WordEditorScheduler{
 	private $WorkData2;
     /** @var array */
     private static $ChunkDataCache = array();
+    /** @var array */
+    private static $ChunkDataList = array();
 
 	public function __construct(string $TaskID,int $LevelID,Vector3 $StartPoint,Vector3 $EndPoint,string $WorkMode = "C",int $WorkID = 0,int $WorkData = 0,int $WorkID2 = 0,int $WorkData2 = 0){
         self::$ChunkDataCache[$TaskID] = array();
@@ -46,6 +48,12 @@ class AWordEditorScheduler extends WordEditorScheduler{
 
 
         self::DoSetChunk($Level,$Chunk);
+        self::$ChunkDataList[$TaskID]['ChunkLeft']--;
+        if(self::$ChunkDataList[$TaskID]['ChunkLeft'] === 0){
+            self::CallBack($TaskID,'AWordEditor',array());
+            unset(self::$ChunkDataList[$TaskID]);
+        }
+
 
     }
 	public function RunTask($Async = false){
@@ -60,6 +68,10 @@ class AWordEditorScheduler extends WordEditorScheduler{
                 self::$ChunkDataCache[$this->TaskID][$_SubTaskID]['Tile'] = $Chunk->getTiles();
                 self::$ChunkDataCache[$this->TaskID][$_SubTaskID]['Entity'] = $Chunk->getEntities();
             }
+            if(!isset(self::$ChunkDataList[$this->TaskID]['ChunkLeft'])){
+                self::$ChunkDataList[$this->TaskID]['ChunkLeft'] = 0;
+            }
+            self::$ChunkDataList[$this->TaskID]['ChunkLeft']++;
 			Server::getInstance()->getScheduler()->scheduleAsyncTask(new \BlueWEMT\ATask\ChunkWorkerATask($level,$Chunk,array($ChunkPos[2],$ChunkPos[3],$this->WorkMode,$this->WorkID,$this->WorkData,$this->WorkID2,$this->WorkData2),$this->TaskID,$_SubTaskID));
 		}
 		return true;
