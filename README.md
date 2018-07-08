@@ -1,9 +1,12 @@
 # BlueWE_MT
 超高速创世神系列
-#已知bug
+<b>已知bug</b><br>
 <code>
-会导致被操作的区块上面的实体丢失问题
- 光照问题
+ <br>
+会导致被操作的区块上面的实体丢失
+ <br>
+ 被操作的区块上面的光照问题
+ <br>
 </code>
 
 <a href="https://www.bilibili.com/video/av14524120/">观看第一次测试版演示视频戳我(哔哩哔哩)</a><br>
