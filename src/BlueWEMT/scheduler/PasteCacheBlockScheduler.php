@@ -2,9 +2,11 @@
 declare(strict_types = 1);
 namespace BlueWEMT\scheduler;
 use pocketmine\entity\Entity;
+use pocketmine\nbt\LittleEndianNBTStream;
 use pocketmine\tile\Tile;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NBTStream;
+use pocketmine\tile\Chest;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\Server;
 use BlueWEMT\ATask\LoadCacheBlockFileATask;
@@ -64,21 +66,31 @@ class PasteCacheBlockScheduler extends WordEditorScheduler{
                 }
             }
         }*/
-        foreach($TileList as $_TileArrData){
-            $nbt = NBTStream::fromArray($_TileArrData);
+        foreach($TileList as $_TileData){
+            $nbtReader = new LittleEndianNBTStream();
+            $nbt = $nbtReader->read($_TileData);
+                //NBTStream::fromArray($_TileArrData);
             if($nbt instanceof CompoundTag){
-                if(!isset($nbt->id)){
+
+                if(!$nbt->hasTag(Tile::TAG_ID)){
                     continue;
                 }
+                $nbt->setInt(Tile::TAG_X,$nbt->getInt(Tile::TAG_X) + $DatumPoint->x,true);
+                $nbt->setInt(Tile::TAG_Y,$nbt->getInt(Tile::TAG_Y) + $DatumPoint->y,true);
+                $nbt->setInt(Tile::TAG_Z,$nbt->getInt(Tile::TAG_Z) + $DatumPoint->z,true);
+                /*
                 $nbt["x"] = (int)($nbt["x"] + $DatumPoint->x);
                 $nbt["y"] = (int)($nbt["y"] + $DatumPoint->y);
-                $nbt["z"] = (int)($nbt["z"] + $DatumPoint->z);
+                $nbt["z"] = (int)($nbt["z"] + $DatumPoint->z);*/
                 if(($nbt["x"] >> 4) !== $Chunk->getX() or ($nbt["z"] >> 4) !== $Chunk->getZ()){
                     continue; //Fixes tiles allocated in wrong chunks.
                 }
 
-                if(isset($nbt->pairx))unset($nbt->pairx);
-                if(isset($nbt->pairz))unset($nbt->pairz);
+                if($nbt->hasTag(Chest::TAG_PAIRX))$nbt->removeTag(Chest::TAG_PAIRX);
+                if($nbt->hasTag(Chest::TAG_PAIRZ))$nbt->removeTag(Chest::TAG_PAIRZ);
+                if($nbt->hasTag(Chest::TAG_PAIR_LEAD))$nbt->removeTag(Chest::TAG_PAIR_LEAD);
+                //todo
+
                 if(($tile = Tile::createTile($nbt["id"], $level, $nbt)) === null){
                     continue;
                 }elseif($tile instanceof Tile){

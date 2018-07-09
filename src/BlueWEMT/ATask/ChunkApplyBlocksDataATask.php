@@ -80,7 +80,7 @@ class ChunkApplyBlocksDataATask extends AsyncTask{
                         }
                         if(isset($_data['T'])){
                             $TileList [] = $_data['T'];
-                            echo('T:('.$x .','.$y.','.$z.')'."\n");
+                            //echo('T:('.$x .','.$y.','.$z.')'."\n");
                         }
                     }elseif(strlen($_data) == 3){
 						$Chunk->setBlock($x, $y, $z, ord($_data{0}), ord($_data{1}));

@@ -24,6 +24,7 @@ declare(strict_types = 1);
 */  
 namespace BlueWEMT\ATask;
 use pocketmine\entity\Human;
+use pocketmine\nbt\LittleEndianNBTStream;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\tile\Tile;
@@ -90,6 +91,7 @@ class ChunkCacheGenerateATask extends AsyncTask{
             }
         }
         */
+        $nbtWriter = new LittleEndianNBTStream();
         foreach($ChunkTile as $_TileIndex => $tile){
 			
             if(API::IsInArea(new Vector3($StartPoint->x + ($Chunk->getX() << 4),$StartPoint->y,$StartPoint->z + ($Chunk->getZ() << 4)),
@@ -98,17 +100,21 @@ class ChunkCacheGenerateATask extends AsyncTask{
 				
 				$NBTtag = new CompoundTag();
                 $tile->saveNBT($NBTtag);//保存到CompoundTag
-
-                $_TileX = (int)($tile->getX());
-                $_TileY = (int)($tile->getY());
-                $_TileZ = (int)($tile->getZ());
-                echo('T:('.$_TileX .','.$_TileY.','.$_TileZ.')'."\n");
-                //$nbt = $tile->namedtag;
-                $NBTtag[Tile::TAG_X] = (int)($NBTtag[Tile::TAG_X] - $DatumPoint->x);
-				$NBTtag[Tile::TAG_Y] = (int)($NBTtag[Tile::TAG_Y] - $DatumPoint->y);
-				$NBTtag[Tile::TAG_Z] = (int)($NBTtag[Tile::TAG_Z] - $DatumPoint->z);
-				//坐标减基准点
-                $TileNBT [$_TileX][$_TileY][$_TileZ] = NBTStream::toArray($NBTtag);;
+                if($NBTtag->getCount() > 0){
+                    $_TileX = (int)($tile->getX());
+                    $_TileY = (int)($tile->getY());
+                    $_TileZ = (int)($tile->getZ());
+                    echo('T:('.$_TileX .','.$_TileY.','.$_TileZ.')'."\n");
+                    //$nbt = $tile->namedtag;
+                    $NBTtag->setInt(Tile::TAG_X,$NBTtag->getInt(Tile::TAG_X) - $DatumPoint->x,true);
+                    $NBTtag->setInt(Tile::TAG_Y,$NBTtag->getInt(Tile::TAG_Y) - $DatumPoint->y,true);
+                    $NBTtag->setInt(Tile::TAG_Z,$NBTtag->getInt(Tile::TAG_Z) - $DatumPoint->z,true);
+                    $nbtBuffer = $nbtWriter->write($NBTtag);
+				    //坐标减基准点
+                    if($nbtBuffer !== false)
+                        $TileNBT [$_TileX][$_TileY][$_TileZ] = $nbtBuffer;
+                    //new NBTStream();
+                }
 			}
 
         }
